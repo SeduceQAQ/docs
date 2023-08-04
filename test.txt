@@ -1,0 +1,57 @@
+version: "3"
+
+services:
+  halo:
+    image: halohub/halo:2.8
+    container_name: halo
+    restart: on-failure:3
+    depends_on:
+      halodb:
+        condition: service_healthy
+    networks:
+      halo_network:
+    volumes:
+      - ./:/root/.halo2
+    ports:
+      - "8090:8090"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/actuator/health/readiness"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s          
+    command:
+      - --spring.r2dbc.url=r2dbc:pool:postgresql://halodb/halo
+      - --spring.r2dbc.username=halo
+      # PostgreSQL 的密码，请保证与下方 POSTGRES_PASSWORD 的变量值一致。
+      - --spring.r2dbc.password=@Duolaameng6
+      - --spring.sql.init.platform=postgresql
+      # 外部访问地址，请根据实际需要修改
+      - --halo.external-url=https://blog.seduceqaq.com:8090/
+      # 初始化的超级管理员用户名
+      - --halo.security.initializer.superadminusername=seduce
+      # 初始化的超级管理员密码
+      - --halo.security.initializer.superadminpassword=@Duolaameng6
+  halodb:
+    image: postgres:latest
+    container_name: halodb
+    restart: on-failure:3
+    networks:
+      halo_network:
+    volumes:
+      - ./db:/root/postgresql/data
+    ports:
+      - "5432"
+    healthcheck:
+      test: [ "CMD", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      - POSTGRES_PASSWORD=@Duolaameng6
+      - POSTGRES_USER=halo
+      - POSTGRES_DB=halo
+      - PGUSER=halo
+
+networks:
+  halo_network:
